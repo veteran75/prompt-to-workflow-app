@@ -1,477 +1,451 @@
-import React, { useState, useMemo, useRef } from "react";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Brain,
+  Database,
+  Gauge,
+  GitBranch,
+  Sparkles,
+  ShieldCheck,
+  Users,
+  Clock3,
+  ArrowRight,
+  Layers3,
+  Wand2,
+  BarChart3,
+  Bot,
+  Activity,
+  AlertTriangle,
+  Workflow,
+  Building2,
+} from "lucide-react";
 
-const COLORS = {
-  bgTop: "#eef4ff",
-  bgBottom: "#ffffff",
-  card: "#ffffff",
-  border: "#cbd5e1",
-  text: "#0f172a",
-  muted: "#64748b",
-  primary: "#2563eb",
-  primarySoft: "#dbeafe",
-  secondary: "#7c3aed",
-  secondarySoft: "#ede9fe",
-  teal: "#0f766e",
-  tealSoft: "#ccfbf1",
-  green: "#059669",
-  greenSoft: "#d1fae5",
-  orange: "#d97706",
-  orangeSoft: "#fef3c7",
-  red: "#dc2626",
-  redSoft: "#fee2e2",
-  slateSoft: "#e2e8f0",
+const Card = ({ children, className = "" }) => (
+  <div className={`rounded-[28px] border border-slate-200/80 bg-white/90 shadow-[0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children, className = "" }) => (
+  <div className={`border-b border-slate-200/70 p-5 ${className}`}>{children}</div>
+);
+
+const CardContent = ({ children, className = "" }) => (
+  <div className={`p-5 ${className}`}>{children}</div>
+);
+
+const CardTitle = ({ children, className = "" }) => (
+  <h2 className={`text-lg font-semibold tracking-tight text-slate-900 ${className}`}>{children}</h2>
+);
+
+const Button = ({ children, variant = "default", className = "", ...props }) => (
+  <button
+    {...props}
+    className={`inline-flex items-center justify-center rounded-2xl px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
+      variant === "outline"
+        ? "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+        : "bg-slate-900 text-white shadow-lg shadow-slate-900/10 hover:bg-slate-800"
+    } ${className}`}
+  >
+    {children}
+  </button>
+);
+
+const Textarea = (props) => (
+  <textarea
+    {...props}
+    className="min-h-[130px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-slate-300 focus:shadow-sm"
+  />
+);
+
+const Badge = ({ children, className = "" }) => (
+  <span className={`inline-flex items-center rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 ${className}`}>
+    {children}
+  </span>
+);
+
+const Progress = ({ value }) => (
+  <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-200">
+    <div
+      className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-indigo-500"
+      style={{ width: `${value}%` }}
+    />
+  </div>
+);
+
+const samplePrompts = [
+  "Automate employee onboarding using M365, ServiceNow, and Teams approvals.",
+  "Create a budget approval workflow with manager review, finance validation, and audit logging.",
+  "Standardize duplicate collaboration tools across departments and recommend a migration path.",
+];
+
+const fallbackWorkflow = {
+  title: "Employee Onboarding Workflow",
+  summary: "Automates onboarding across HR, IT, Security, and Manager approvals with structured approvals, account provisioning, and day-one readiness tasks.",
+  tools: ["OpenAI", "Power Automate", "ServiceNow", "M365", "Power BI"],
+  risks: ["Approval delays", "Missing access requirements", "Manual handoff gaps"],
+  metrics: ["Time saved", "Automation coverage", "Provisioning completion rate", "Day-one readiness rate"],
+  steps: [
+    { id: 1, name: "Submit Request", owner: "HR", type: "manual", description: "HR submits the onboarding request with employee details, start date, location, and role." },
+    { id: 2, name: "Manager Approval", owner: "Manager", type: "decision", description: "Manager validates role, reporting line, and required access packages." },
+    { id: 3, name: "Provision Accounts", owner: "IT", type: "automation", description: "Create M365 account, assign licenses, provision Teams and standard device profile." },
+    { id: 4, name: "Security Review", owner: "Security", type: "decision", description: "Review elevated permissions, sensitive data access, and compliance flags." },
+    { id: 5, name: "Welcome & Handoff", owner: "HR / IT", type: "manual", description: "Send welcome packet, confirm readiness, and close the onboarding request." },
+  ],
 };
 
-const ROLE_STYLES = {
-  HR: { bg: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)", accent: "#2563eb" },
-  IT: { bg: "linear-gradient(135deg, #ecfeff 0%, #ccfbf1 100%)", accent: "#0f766e" },
-  Manager: { bg: "linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%)", accent: "#7c3aed" },
-  Employee: { bg: "linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)", accent: "#059669" },
-  Security: { bg: "linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%)", accent: "#dc2626" },
-};
+const summaryCards = [
+  {
+    title: "Target Output",
+    text: "Executive-ready workflow with visual steps, ownership, risks, and measurable outcomes.",
+    icon: Workflow,
+  },
+  {
+    title: "Recommended Stack",
+    text: "OpenAI, Power Automate, ServiceNow, M365, Power BI",
+    icon: Database,
+  },
+  {
+    title: "Business Outcome",
+    text: "Fewer handoffs, faster turnaround, stronger standardization and governance.",
+    icon: Building2,
+  },
+];
 
-const rolesLibrary = ["HR", "IT", "Manager", "Employee", "Security"];
+const metricCards = [
+  { label: "Workflow Confidence", value: 91, icon: Brain, note: "Strong prompt-to-process alignment" },
+  { label: "Automation Coverage", value: 78, icon: Bot, note: "Most repetitive steps can be automated" },
+  { label: "Governance Readiness", value: 86, icon: ShieldCheck, note: "Policies and approvals mapped" },
+  { label: "Estimated Time Saved", value: 64, icon: Clock3, note: "Compared with manual coordination" },
+];
 
-function getStageStyle(name) {
-  switch (name) {
-    case "Intake":
-      return { bg: COLORS.primarySoft, border: COLORS.primary };
-    case "Review":
-      return { bg: COLORS.secondarySoft, border: COLORS.secondary };
-    case "Approval":
-      return { bg: COLORS.orangeSoft, border: COLORS.orange };
-    case "Provision":
-      return { bg: COLORS.tealSoft, border: COLORS.teal };
-    case "Validate":
-      return { bg: COLORS.redSoft, border: COLORS.red };
-    case "Enable":
-      return { bg: COLORS.greenSoft, border: COLORS.green };
-    default:
-      return { bg: COLORS.slateSoft, border: COLORS.muted };
-  }
-}
-
-function inferWorkflow(prompt) {
-  const roles = rolesLibrary.filter((r) =>
-    prompt.toLowerCase().includes(r.toLowerCase())
-  );
-  const finalRoles = roles.length ? roles : ["HR", "IT", "Manager"];
-
-  const stages = [
-    "Intake",
-    "Review",
-    "Approval",
-    "Provision",
-    "Validate",
-    "Enable",
-    "Close",
-  ];
-
-  return {
-    title: "Workflow Diagram",
-    subtitle: "Color-coded workflow with swimlanes and decision points",
-    roles: finalRoles,
-    stages: stages.map((name, i) => {
-      const style = getStageStyle(name);
-      return {
-        id: i,
-        name,
-        owner: finalRoles[i % finalRoles.length],
-        type: name === "Approval" || name === "Validate" ? "decision" : "process",
-        bg: style.bg,
-        borderColor: style.border,
-      };
-    }),
-  };
-}
-
-function runInferenceTests() {
-  const results = [];
-
-  const workflowA = inferWorkflow(
-    "Employee onboarding with HR, IT, Manager, Teams, approvals, and account setup"
-  );
-  results.push({
-    name: "detects known roles",
-    pass:
-      workflowA.roles.includes("HR") &&
-      workflowA.roles.includes("IT") &&
-      workflowA.roles.includes("Manager"),
-  });
-
-  const workflowB = inferWorkflow("");
-  results.push({
-    name: "falls back safely on empty prompt",
-    pass: workflowB.roles.length === 3 && workflowB.stages.length === 7,
-  });
-
-  const workflowC = inferWorkflow("Security validation and approval workflow");
-  results.push({
-    name: "marks approval and validate as decision nodes",
-    pass:
-      workflowC.stages.find((stage) => stage.name === "Approval")?.type === "decision" &&
-      workflowC.stages.find((stage) => stage.name === "Validate")?.type === "decision",
-  });
-
-  const workflowD = inferWorkflow("Create onboarding workflow for HR and Employee");
-  results.push({
-    name: "keeps role detection scoped to prompt content",
-    pass: workflowD.roles.includes("HR") && workflowD.roles.includes("Employee"),
-  });
-
-  return results;
-}
-
-export default function App() {
-  const [prompt, setPrompt] = useState(
-    "Create an employee onboarding workflow using HR, IT, Manager, Security, and Employee swimlanes. Include approvals, account setup, equipment assignment, security validation, collaboration setup, training, and 30-day follow-up."
-  );
-  const [savedPrompt, setSavedPrompt] = useState(prompt);
-  const [activeTab, setActiveTab] = useState("diagram");
-  const diagramRef = useRef(null);
-
-  const workflow = useMemo(() => inferWorkflow(savedPrompt), [savedPrompt]);
-  const testResults = useMemo(() => runInferenceTests(), []);
-
-  const exportPNG = async () => {
-    const canvas = await html2canvas(diagramRef.current, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-    });
-    const link = document.createElement("a");
-    link.download = "workflow-colorful.png";
-    link.href = canvas.toDataURL();
-    link.click();
-  };
-
-  const exportPDF = async () => {
-    const canvas = await html2canvas(diagramRef.current, {
-      backgroundColor: "#ffffff",
-      scale: 2,
-    });
-    const img = canvas.toDataURL("image/png");
-    const pdf = new jsPDF("landscape", "px", [canvas.width, canvas.height]);
-    pdf.addImage(img, "PNG", 0, 0);
-    pdf.save("workflow-colorful.pdf");
+function WorkflowNode({ icon: Icon, title, text, tone = "slate" }) {
+  const tones = {
+    slate: "border-slate-200 bg-white",
+    blue: "border-sky-200 bg-sky-50/70",
+    violet: "border-violet-200 bg-violet-50/70",
+    emerald: "border-emerald-200 bg-emerald-50/70",
   };
 
   return (
-    <div
-      style={{
-        padding: 24,
-        minHeight: "100vh",
-        background: `linear-gradient(180deg, ${COLORS.bgTop} 0%, #f8fafc 45%, ${COLORS.bgBottom} 100%)`,
-        color: COLORS.text,
-        fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-      }}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className={`min-w-[220px] rounded-[24px] border p-4 shadow-sm ${tones[tone]}`}
     >
-      <div style={{ maxWidth: 1280, margin: "0 auto" }}>
-        <div
-          style={{
-            marginBottom: 18,
-            padding: 22,
-            borderRadius: 22,
-            background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 55%, #0f766e 100%)",
-            color: "#ffffff",
-            boxShadow: "0 14px 34px rgba(37, 99, 235, 0.18)",
-          }}
+      <div className="mb-3 flex items-center gap-3">
+        <div className="rounded-2xl border border-white/80 bg-white p-2 shadow-sm">
+          <Icon className="h-5 w-5 text-slate-800" />
+        </div>
+        <div className="font-semibold text-slate-900">{title}</div>
+      </div>
+      <p className="text-sm leading-6 text-slate-600">{text}</p>
+    </motion.div>
+  );
+}
+
+function StepCard({ step, isLast }) {
+  const tone = {
+    manual: "border-slate-200 bg-slate-50 text-slate-700",
+    decision: "border-amber-200 bg-amber-50 text-amber-700",
+    automation: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    insight: "border-violet-200 bg-violet-50 text-violet-700",
+  };
+
+  return (
+    <div className="relative">
+      <div className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">Step {step.id}</div>
+            <h3 className="mt-1 text-base font-semibold text-slate-900">{step.name}</h3>
+          </div>
+          <Badge className={tone[step.type] || ""}>{step.type}</Badge>
+        </div>
+        <div className="mb-2 text-sm font-medium text-slate-700">Owner: {step.owner}</div>
+        <p className="text-sm leading-6 text-slate-600">{step.description}</p>
+      </div>
+      {!isLast && (
+        <div className="mx-auto my-2 flex w-full items-center justify-center text-slate-300">
+          <ArrowRight className="h-4 w-4 rotate-90" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  const [prompt, setPrompt] = useState(samplePrompts[0]);
+  const [workflowResult, setWorkflowResult] = useState(fallbackWorkflow);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const generateWorkflow = async () => {
+    console.log("CLICKED");
+    setLoading(true);
+    setError("");
+
+    try {
+      const res = await fetch("http://localhost:5000/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      const data = await res.json();
+      console.log("STATUS:", res.status);
+      console.log("DATA:", data);
+
+      if (!res.ok) {
+        throw new Error(data.error || `Request failed with status ${res.status}`);
+      }
+
+      setWorkflowResult(data);
+    } catch (err) {
+      console.error("ERROR:", err);
+      setError(err.message || "Error connecting to AI");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.12),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(99,102,241,0.10),_transparent_28%),linear-gradient(to_bottom,_#f8fafc,_#eef2ff_55%,_#f8fafc)] p-6 md:p-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45 }}
         >
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              opacity: 0.9,
-            }}
-          >
-            Executive workflow demo
-          </div>
-          <h1 style={{ margin: "8px 0 6px 0", fontSize: 34, lineHeight: 1.1 }}>
-            Workflow Generator
-          </h1>
-          <div style={{ fontSize: 15, opacity: 0.94, maxWidth: 760 }}>
-            Turn plain-language prompts into colorful, presentation-ready workflow diagrams for interviews, portfolio demos, and executive walkthroughs.
-          </div>
-        </div>
+          <Card className="overflow-hidden border-slate-200/80 bg-white/85">
+            <div className="grid lg:grid-cols-[1.35fr_0.9fr]">
+              <div className="p-6 md:p-8">
+                <Badge className="mb-4 bg-white">Enterprise Workflow Studio</Badge>
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <h1 className="text-4xl font-semibold tracking-tight text-slate-950 md:text-5xl">
+                      Prompt to Workflow
+                    </h1>
+                    <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 md:text-base">
+                      Turn natural-language requests into structured workflows with AI analysis,
+                      orchestration logic, optimization insight, and executive-ready outputs.
+                    </p>
+                  </div>
+                  <div className="hidden rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 lg:block">
+                    <div className="flex items-center gap-2 text-sm font-medium text-slate-800">
+                      <Sparkles className="h-4 w-4" /> CIO Demo Ready
+                    </div>
+                    <div className="mt-1 text-xs text-slate-500">Live AI + visual workflow output</div>
+                  </div>
+                </div>
 
-        <div
-          style={{
-            background: COLORS.card,
-            border: `1px solid ${COLORS.border}`,
-            borderRadius: 20,
-            padding: 18,
-            boxShadow: "0 10px 26px rgba(15, 23, 42, 0.06)",
-            marginBottom: 18,
-          }}
-        >
-          <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Workflow prompt</div>
-          <textarea
-            style={{
-              width: "100%",
-              height: 120,
-              padding: 14,
-              borderRadius: 14,
-              border: `1px solid ${COLORS.border}`,
-              background: "#ffffff",
-              boxShadow: "0 2px 10px rgba(15, 23, 42, 0.04)",
-              fontSize: 14,
-              color: COLORS.text,
-              resize: "vertical",
-            }}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-          />
+                <div className="rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-sm font-medium text-slate-800">Workflow Prompt</div>
+                      <div className="text-xs text-slate-500">Describe the business process you want designed or optimized</div>
+                    </div>
+                    <Badge>AI-assisted generation</Badge>
+                  </div>
 
-          <div style={{ marginTop: 12, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              onClick={() => setSavedPrompt(prompt)}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 12,
-                border: "none",
-                background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
-                color: "#ffffff",
-                fontWeight: 800,
-                cursor: "pointer",
-                boxShadow: "0 8px 18px rgba(37, 99, 235, 0.18)",
-              }}
-            >
-              Generate
-            </button>
-            <button
-              onClick={exportPNG}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 12,
-                border: `1px solid ${COLORS.primary}`,
-                background: COLORS.primarySoft,
-                color: COLORS.primary,
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              Export PNG
-            </button>
-            <button
-              onClick={exportPDF}
-              style={{
-                padding: "10px 16px",
-                borderRadius: 12,
-                border: `1px solid ${COLORS.secondary}`,
-                background: COLORS.secondarySoft,
-                color: COLORS.secondary,
-                fontWeight: 800,
-                cursor: "pointer",
-              }}
-            >
-              Export PDF
-            </button>
-          </div>
-        </div>
+                  <Textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} />
 
-        <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-          {[
-            { key: "diagram", label: "Diagram" },
-            { key: "summary", label: "Summary" },
-            { key: "tests", label: "Tests" },
-          ].map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              style={{
-                padding: "10px 14px",
-                borderRadius: 12,
-                border: `1px solid ${COLORS.border}`,
-                background: activeTab === tab.key ? "linear-gradient(135deg, #eff6ff 0%, #ede9fe 100%)" : "#ffffff",
-                color: COLORS.text,
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {samplePrompts.map((item) => (
+                      <button
+                        key={item}
+                        onClick={() => setPrompt(item)}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 transition hover:bg-slate-100"
+                      >
+                        {item.length > 52 ? `${item.slice(0, 52)}...` : item}
+                      </button>
+                    ))}
+                  </div>
 
-        {activeTab === "diagram" && (
-          <div
-            ref={diagramRef}
-            style={{
-              padding: 24,
-              background: COLORS.card,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 22,
-              boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 12,
-                flexWrap: "wrap",
-                marginBottom: 18,
-              }}
-            >
-              <div>
-                <h2 style={{ margin: 0, color: COLORS.text, fontSize: 26 }}>{workflow.title}</h2>
-                <div style={{ marginTop: 6, color: COLORS.muted, fontSize: 14 }}>
-                  {workflow.subtitle}
+                  <div className="mt-5 flex flex-wrap gap-3">
+                    <Button onClick={generateWorkflow}>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      {loading ? "Generating..." : "Generate Workflow"}
+                    </Button>
+                    <Button variant="outline">
+                      <GitBranch className="mr-2 h-4 w-4" /> Visualize Flow
+                    </Button>
+                    <Button variant="outline">
+                      <BarChart3 className="mr-2 h-4 w-4" /> Review Metrics
+                    </Button>
+                  </div>
+
+                  {error && (
+                    <div className="mt-4 flex items-center gap-2 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                      <AlertTriangle className="h-4 w-4" /> {error}
+                    </div>
+                  )}
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {workflow.roles.map((role) => (
-                  <span
-                    key={role}
-                    style={{
-                      padding: "6px 10px",
-                      borderRadius: 999,
-                      background: "linear-gradient(135deg, #eff6ff 0%, #ede9fe 100%)",
-                      color: COLORS.text,
-                      fontSize: 12,
-                      fontWeight: 800,
-                      border: `1px solid ${COLORS.border}`,
-                    }}
-                  >
-                    {role}
-                  </span>
-                ))}
+
+              <div className="border-l border-slate-200 bg-slate-950 p-6 text-white md:p-8">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="rounded-2xl bg-white/10 p-3">
+                    <Gauge className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-300">AI Assessment</div>
+                    <div className="text-xl font-semibold">Workflow Readiness</div>
+                  </div>
+                </div>
+
+                <div className="mb-5 rounded-[24px] bg-white/5 p-4 ring-1 ring-white/10">
+                  <div className="mb-2 flex items-center justify-between text-sm text-slate-200">
+                    <span>Overall score</span>
+                    <span className="font-semibold text-white">89 / 100</span>
+                  </div>
+                  <Progress value={89} />
+                  <p className="mt-3 text-sm leading-6 text-slate-300">
+                    High potential for automation, strong governance alignment, minor exception handling still recommended.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {metricCards.map((metric) => {
+                    const Icon = metric.icon;
+                    return (
+                      <div key={metric.label} className="rounded-[22px] bg-white/5 p-4 ring-1 ring-white/10">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2 text-sm text-slate-200">
+                            <Icon className="h-4 w-4" /> {metric.label}
+                          </div>
+                          <div className="text-lg font-semibold text-white">{metric.value}%</div>
+                        </div>
+                        <Progress value={metric.value} />
+                        <p className="mt-3 text-xs leading-5 text-slate-400">{metric.note}</p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+          </Card>
+        </motion.div>
 
-            {workflow.roles.map((role) => {
-              const laneStyle = ROLE_STYLES[role] || { bg: "#f8fafc", accent: COLORS.muted };
-              return (
-                <div
-                  key={role}
-                  style={{
-                    marginBottom: 18,
-                    padding: 16,
-                    borderRadius: 18,
-                    background: laneStyle.bg,
-                    border: `1px solid ${COLORS.border}`,
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-                    <div
-                      style={{
-                        width: 10,
-                        height: 10,
-                        borderRadius: 999,
-                        background: laneStyle.accent,
-                      }}
-                    />
-                    <strong style={{ color: COLORS.text, fontSize: 16 }}>{role}</strong>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-                    {workflow.stages
-                      .filter((s) => s.owner === role)
-                      .map((stage) => (
-                        <div
-                          key={stage.id}
-                          style={{
-                            padding: "12px 14px",
-                            minWidth: 140,
-                            textAlign: "center",
-                            border: `2px ${stage.type === "decision" ? "dashed" : "solid"} ${stage.borderColor}`,
-                            borderRadius: stage.type === "decision" ? 18 : 12,
-                            background: stage.bg,
-                            color: COLORS.text,
-                            fontWeight: 800,
-                            boxShadow: "0 8px 18px rgba(15, 23, 42, 0.06)",
-                          }}
-                        >
-                          <div style={{ fontSize: 13 }}>{stage.name}</div>
-                          <div style={{ marginTop: 6, fontSize: 11, color: COLORS.muted, fontWeight: 700 }}>
-                            {stage.type === "decision" ? "Decision" : "Process"}
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+        <div className="grid gap-4 xl:grid-cols-4">
+          <Card className="xl:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Layers3 className="h-5 w-5" /> Workflow Architecture
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto pb-2">
+                <div className="flex min-w-[1050px] items-center gap-3">
+                  {(workflowResult?.steps || []).map((step, index, arr) => (
+                    <React.Fragment key={step.id}>
+                      <WorkflowNode
+                        icon={step.type === "automation" ? Bot : step.type === "decision" ? ShieldCheck : step.type === "insight" ? Brain : Users}
+                        title={step.name}
+                        text={`${step.owner} • ${step.type}`}
+                        tone={step.type === "automation" ? "emerald" : step.type === "decision" ? "violet" : step.type === "insight" ? "slate" : "blue"}
+                      />
+                      {index < arr.length - 1 && <ArrowRight className="h-5 w-5 shrink-0 text-slate-400" />}
+                    </React.Fragment>
+                  ))}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-4">
+            {summaryCards.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Card key={item.title}>
+                  <CardContent className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-slate-100 p-3">
+                      <Icon className="h-5 w-5 text-slate-800" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-900">{item.title}</div>
+                      <div className="mt-1 text-sm leading-6 text-slate-600">{item.text}</div>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
-        )}
+        </div>
 
-        {activeTab === "summary" && (
-          <div
-            style={{
-              padding: 24,
-              background: COLORS.card,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 22,
-              boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>Workflow summary</h2>
-            <div style={{ display: "grid", gap: 12 }}>
-              {workflow.stages.map((stage) => (
-                <div
-                  key={stage.id}
-                  style={{
-                    padding: 14,
-                    borderRadius: 16,
-                    border: `1px solid ${COLORS.border}`,
-                    background: stage.bg,
-                  }}
-                >
-                  <div style={{ fontWeight: 800 }}>{stage.name}</div>
-                  <div style={{ marginTop: 4, fontSize: 13, color: COLORS.muted }}>
-                    Owner: {stage.owner} · Type: {stage.type}
+        {workflowResult && (
+          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Activity className="h-5 w-5" /> AI Workflow Output
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-2xl font-semibold text-slate-950">{workflowResult.title}</h2>
+                    <Badge>{workflowResult.steps?.length || 0} steps</Badge>
                   </div>
+                  <p className="mt-2 text-sm leading-7 text-slate-600">{workflowResult.summary}</p>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {activeTab === "tests" && (
-          <div
-            style={{
-              padding: 24,
-              background: COLORS.card,
-              border: `1px solid ${COLORS.border}`,
-              borderRadius: 22,
-              boxShadow: "0 18px 40px rgba(15, 23, 42, 0.08)",
-            }}
-          >
-            <h2 style={{ marginTop: 0 }}>Parser checks</h2>
-            <div style={{ display: "grid", gap: 10 }}>
-              {testResults.map((test) => (
-                <div
-                  key={test.name}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
-                    padding: 14,
-                    borderRadius: 14,
-                    border: `1px solid ${COLORS.border}`,
-                    background: "#ffffff",
-                  }}
-                >
-                  <div style={{ fontSize: 14 }}>{test.name}</div>
-                  <span
-                    style={{
-                      padding: "5px 10px",
-                      borderRadius: 999,
-                      background: test.pass ? COLORS.greenSoft : COLORS.redSoft,
-                      color: test.pass ? COLORS.green : COLORS.red,
-                      fontWeight: 800,
-                      fontSize: 12,
-                    }}
-                  >
-                    {test.pass ? "PASS" : "FAIL"}
-                  </span>
+                <div className="grid gap-3">
+                  {(workflowResult.steps || []).map((step, index, arr) => (
+                    <StepCard key={step.id} step={step} isLast={index === arr.length - 1} />
+                  ))}
                 </div>
-              ))}
+              </CardContent>
+            </Card>
+
+            <div className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <Database className="h-5 w-5" /> Recommended Tools
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {(workflowResult.tools || []).map((tool) => (
+                      <Badge key={tool}>{tool}</Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <AlertTriangle className="h-5 w-5" /> Risks
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(workflowResult.risks || []).map((risk) => (
+                    <div key={risk} className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      {risk}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-xl">
+                    <BarChart3 className="h-5 w-5" /> Success Metrics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {(workflowResult.metrics || []).map((metric) => (
+                    <div key={metric} className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                      {metric}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
             </div>
           </div>
         )}
