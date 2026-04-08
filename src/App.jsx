@@ -9,49 +9,29 @@ import {
   Position,
 } from "@xyflow/react";
 
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL || "";
-
-const generateWorkflow = async () => {
-  if (!prompt.trim()) return;
-  setLoading(true);
-  setResult(null);
-  setShowJson(false);
-
-  try {
-    const res = await fetch(`${API_BASE}/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ prompt }),
-    });
-
-    const contentType = res.headers.get("content-type") || "";
-    const rawtext = await res.text();  
-    if (!res.ok) {
-      throw new Error(`API error ${res.status}: ${rawText}`);
-    }
-
-    if (contentType.includes("application/json")) {
-      throw new Error('Expected JSON but received: ${rawtext}');
-    }
-
-    const data = JSON.parse(rawtext);
-    setResult(data);
-  } catch (err) {
-    console.error(err);
-    setResult({
-      error: "Failed to generate workflow",
-      details: err?.message || "Unknown error",
-    });
-  } finally {
-    setLoading(false);
-  }
-}
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "";
 
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 110;
+
+const examplePrompts = [
+  {
+    label: "Incident Response",
+    text: "Create an enterprise incident response workflow with severity levels, escalation paths, stakeholder communication, and resolution tracking.",
+  },
+  {
+    label: "Employee Onboarding",
+    text: "Create a new employee onboarding workflow involving HR, IT, and hiring managers with account provisioning, equipment setup, approvals, and training steps.",
+  },
+  {
+    label: "Tool Rationalization",
+    text: "Create a workforce technology rationalization workflow to reduce tool sprawl, including inventory, usage analysis, retain-vs-retire decisions, migration planning, and governance.",
+  },
+  {
+    label: "Help Desk",
+    text: "Create a help desk ticket workflow including submission, triage, escalation, resolution, user validation, and closure.",
+  },
+];
 
 function getNodeStyle(type) {
   const base = {
@@ -341,6 +321,10 @@ export default function App() {
 
   const { nodes, edges } = useMemo(() => buildLayoutedFlow(result), [result]);
 
+  const handleExampleClick = (text) => {
+    setPrompt(text);
+  };
+
   const generateWorkflow = async () => {
     if (!prompt.trim()) return;
 
@@ -357,10 +341,30 @@ export default function App() {
         body: JSON.stringify({ prompt }),
       });
 
-      const data = await res.json();
+      const rawText = await res.text();
+
+      if (!res.ok) {
+        throw new Error(`API error ${res.status}: ${rawText}`);
+      }
+
+      let data;
+      try {
+        data = JSON.parse(rawText);
+      } catch {
+        throw new Error(`Server did not return JSON: ${rawText}`);
+      }
+
+      if (!data.steps || !Array.isArray(data.steps)) {
+        throw new Error("Invalid workflow format: missing steps array.");
+      }
+
+      if (!data.connections || !Array.isArray(data.connections)) {
+        throw new Error("Invalid workflow format: missing connections array.");
+      }
+
       setResult(data);
     } catch (err) {
-      console.error(err);
+      console.error("Generate failed:", err);
       setResult({
         error: "Failed to generate workflow",
         details: err?.message || "Unknown error",
@@ -439,6 +443,37 @@ export default function App() {
             onChange={(e) => setPrompt(e.target.value)}
           />
 
+          <p style={{ fontWeight: 600, marginTop: 0, marginBottom: 8 }}>
+            Try an example:
+          </p>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              marginBottom: 14,
+            }}
+          >
+            {examplePrompts.map((example, index) => (
+              <button
+                key={index}
+                onClick={() => handleExampleClick(example.text)}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 999,
+                  border: "1px solid #d1d5db",
+                  background: "#f9fafb",
+                  cursor: "pointer",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}
+              >
+                {example.label}
+              </button>
+            ))}
+          </div>
+
           <div
             style={{
               display: "flex",
@@ -480,7 +515,7 @@ export default function App() {
               padding: 14,
             }}
           >
-            Generating workflow and visual diagram...
+            Generating AI workflow...
           </div>
         ) : null}
 
