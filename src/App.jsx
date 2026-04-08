@@ -12,6 +12,44 @@ import {
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "";
 
+const generateWorkflow = async () => {
+  if (!prompt.trim()) return;
+  setLoading(true);
+  setResult(null);
+  setShowJson(false);
+
+  try {
+    const res = await fetch(`${API_BASE}/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const contentType = res.headers.get("content-type") || "";
+    const rawtext = await res.text();  
+    if (!res.ok) {
+      throw new Error(`API error ${res.status}: ${rawText}`);
+    }
+
+    if (contentType.includes("application/json")) {
+      throw new Error('Expected JSON but received: ${rawtext}');
+    }
+
+    const data = JSON.parse(rawtext);
+    setResult(data);
+  } catch (err) {
+    console.error(err);
+    setResult({
+      error: "Failed to generate workflow",
+      details: err?.message || "Unknown error",
+    });
+  } finally {
+    setLoading(false);
+  }
+}
+
 const NODE_WIDTH = 260;
 const NODE_HEIGHT = 110;
 
@@ -311,7 +349,7 @@ export default function App() {
     setShowJson(false);
 
     try {
-      const res = await fetch(`${API_BASE}/generate`, {
+      const res = await fetch(`${API_BASE}/api/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
