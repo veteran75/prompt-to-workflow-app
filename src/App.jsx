@@ -38,12 +38,12 @@ function getNodeStyle(type) {
   const base = {
     width: NODE_WIDTH,
     padding: 12,
-    borderRadius: 14,
+    borderRadius: 16,
     border: "1px solid #d1d5db",
     background: "#ffffff",
     textAlign: "center",
     fontSize: 14,
-    boxShadow: "0 1px 2px rgba(0,0,0,0.06)",
+    boxShadow: "0 4px 12px rgba(15,23,42,0.08)",
   };
 
   if (type === "start") {
@@ -85,7 +85,7 @@ function getNodeStyle(type) {
       ...base,
       background: "#f5f3ff",
       border: "2px solid #7c3aed",
-      boxShadow: "0 0 0 2px rgba(124,58,237,0.2)",
+      boxShadow: "0 0 0 2px rgba(124,58,237,0.16)",
     };
   }
 
@@ -200,14 +200,12 @@ function buildLayoutedFlow(workflow) {
       data: {
         label: (
           <div>
-            <div style={{ fontWeight: 700, marginBottom: 6 }}>{step.label}</div>
-
+            <div style={{ fontWeight: 800, marginBottom: 6 }}>{step.label}</div>
             {step.owner ? (
               <div style={{ fontSize: 12, color: "#475569", marginBottom: 4 }}>
                 Owner: {step.owner}
               </div>
             ) : null}
-
             <div
               style={{
                 fontSize: 12,
@@ -257,12 +255,12 @@ function buildLayoutedFlow(workflow) {
         },
         labelStyle: {
           fontSize: 12,
-          fontWeight: 600,
+          fontWeight: 700,
           fill: "#111827",
         },
         labelBgStyle: {
           fill: "#ffffff",
-          fillOpacity: 0.95,
+          fillOpacity: 0.96,
         },
       };
     });
@@ -274,15 +272,31 @@ function Card({ title, children, style = {} }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #e5e7eb",
-        borderRadius: 18,
-        padding: 20,
-        boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
+        background: "rgba(255,255,255,0.9)",
+        border: "1px solid rgba(255,255,255,0.7)",
+        borderRadius: 24,
+        padding: 24,
+        boxShadow:
+          "0 10px 30px rgba(15, 23, 42, 0.08), 0 2px 10px rgba(15, 23, 42, 0.04)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
         ...style,
       }}
     >
-      {title ? <h2 style={{ marginTop: 0, marginBottom: 14 }}>{title}</h2> : null}
+      {title ? (
+        <h2
+          style={{
+            marginTop: 0,
+            marginBottom: 16,
+            fontSize: 24,
+            lineHeight: 1.2,
+            color: "#0f172a",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {title}
+        </h2>
+      ) : null}
       {children}
     </div>
   );
@@ -292,14 +306,38 @@ function StatPill({ label, value }) {
   return (
     <div
       style={{
-        padding: "10px 14px",
-        borderRadius: 999,
-        background: "#f8fafc",
+        padding: "12px 16px",
+        borderRadius: 18,
+        background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
         border: "1px solid #e2e8f0",
-        fontSize: 13,
+        minWidth: 110,
+        boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
       }}
     >
-      <strong>{label}:</strong> {value}
+      <div style={{ color: "#64748b", fontSize: 12, marginBottom: 4 }}>
+        {label}
+      </div>
+      <div style={{ color: "#0f172a", fontWeight: 800, fontSize: 18 }}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function SummaryBlock({ title, value }) {
+  return (
+    <div
+      style={{
+        padding: 16,
+        borderRadius: 16,
+        background: "#f8fafc",
+        border: "1px solid #e2e8f0",
+      }}
+    >
+      <strong style={{ display: "block", marginBottom: 6, color: "#0f172a" }}>
+        {title}
+      </strong>
+      <span style={{ color: "#475569", lineHeight: 1.6 }}>{value}</span>
     </div>
   );
 }
@@ -311,6 +349,17 @@ function slugify(text = "workflow-diagram") {
     .replace(/(^-|-$)/g, "");
 }
 
+const secondaryButtonStyle = {
+  padding: "10px 14px",
+  borderRadius: 12,
+  border: "1px solid #d1d5db",
+  background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
+  cursor: "pointer",
+  fontWeight: 700,
+  color: "#0f172a",
+  boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
+};
+
 export default function App() {
   const [prompt, setPrompt] = useState("");
   const [result, setResult] = useState(null);
@@ -320,7 +369,6 @@ export default function App() {
   const [exportingPdf, setExportingPdf] = useState(false);
 
   const diagramRef = useRef(null);
-
   const { nodes, edges } = useMemo(() => buildLayoutedFlow(result), [result]);
 
   const handleExampleClick = (text) => {
@@ -446,8 +494,8 @@ export default function App() {
 
       const availableWidth = pageWidth - margin * 2;
       const availableHeight = pageHeight - 110;
-
       const imgRatio = img.width / img.height;
+
       let imgWidth = availableWidth;
       let imgHeight = imgWidth / imgRatio;
 
@@ -460,7 +508,6 @@ export default function App() {
       const y = 80;
 
       pdf.addImage(dataUrl, "PNG", x, y, imgWidth, imgHeight);
-
       pdf.save(`${slugify(result.title || "workflow-diagram")}.pdf`);
     } catch (error) {
       console.error("PDF export failed:", error);
@@ -469,14 +516,17 @@ export default function App() {
       setExportingPdf(false);
     }
   };
-const copyExecutiveSummary = async () => {
+
+  const copyExecutiveSummary = async () => {
     if (!result?.executiveSummary) return;
 
     const summaryText = [
       `Title: ${result.title || "Workflow Summary"}`,
       "",
       `Business Challenge: ${result.executiveSummary.businessChallenge || ""}`,
-      `Recommended Solution: ${result.executiveSummary.recommendedSolution || ""}`,
+      `Recommended Solution: ${
+        result.executiveSummary.recommendedSolution || ""
+      }`,
       `Expected Outcome: ${result.executiveSummary.expectedOutcome || ""}`,
       `Strategic Value: ${result.executiveSummary.strategicValue || ""}`,
     ].join("\n");
@@ -489,29 +539,76 @@ const copyExecutiveSummary = async () => {
       alert("Failed to copy executive summary.");
     }
   };
-  
+
   return (
     <div
       style={{
-        padding: 24,
-        fontFamily: "Arial, sans-serif",
-        background: "#f3f4f6",
+        padding: 32,
+        fontFamily: "Inter, Arial, sans-serif",
+        background:
+          "linear-gradient(180deg, #f8fafc 0%, #eef2ff 45%, #f8fafc 100%)",
         minHeight: "100vh",
       }}
     >
-      <div style={{ maxWidth: 1320, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1360, margin: "0 auto" }}>
         <Card>
-          <h1 style={{ marginTop: 0, marginBottom: 8 }}>AI Workflow Generator</h1>
-          <p style={{ marginTop: 0, marginBottom: 16, color: "#4b5563" }}>
-            Turn business prompts into executive-ready workflow diagrams.
-          </p>
+          <div style={{ marginBottom: 20 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "6px 12px",
+                borderRadius: 999,
+                background: "#eef2ff",
+                color: "#4338ca",
+                fontSize: 12,
+                fontWeight: 700,
+                letterSpacing: "0.02em",
+                marginBottom: 14,
+              }}
+            >
+              AI-Powered Workflow Design
+            </div>
+
+            <h1
+              style={{
+                marginTop: 0,
+                marginBottom: 10,
+                fontSize: 40,
+                lineHeight: 1.05,
+                color: "#0f172a",
+                letterSpacing: "-0.03em",
+              }}
+            >
+              Turn business prompts into executive-ready workflow diagrams
+            </h1>
+
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: 0,
+                color: "#475569",
+                fontSize: 16,
+                lineHeight: 1.6,
+                maxWidth: 860,
+              }}
+            >
+              Generate structured workflows, visualize process flows, and export
+              polished outputs for presentations, stakeholder reviews, and
+              executive communication.
+            </p>
+          </div>
 
           <label
             htmlFor="workflowPrompt"
             style={{
               display: "block",
               fontWeight: 700,
-              marginBottom: 8,
+              marginBottom: 10,
+              color: "#0f172a",
+              fontSize: 14,
+              letterSpacing: "0.01em",
             }}
           >
             Workflow Prompt
@@ -523,20 +620,32 @@ const copyExecutiveSummary = async () => {
             rows="5"
             style={{
               width: "100%",
-              padding: 14,
-              borderRadius: 12,
-              border: "1px solid #d1d5db",
+              padding: 16,
+              borderRadius: 16,
+              border: "1px solid #cbd5e1",
               marginBottom: 14,
               resize: "vertical",
-              fontSize: 14,
+              fontSize: 15,
+              lineHeight: 1.5,
+              background: "#ffffff",
+              boxShadow: "inset 0 1px 2px rgba(15,23,42,0.04)",
+              outline: "none",
             }}
             placeholder="Create a workforce technology rationalization workflow for a large organization with a clear start and end state."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
           />
 
-          <p style={{ fontWeight: 600, marginTop: 0, marginBottom: 8 }}>
-            Try an example:
+          <p
+            style={{
+              fontWeight: 700,
+              marginTop: 0,
+              marginBottom: 10,
+              color: "#0f172a",
+              fontSize: 14,
+            }}
+          >
+            Try an example
           </p>
 
           <div
@@ -544,7 +653,7 @@ const copyExecutiveSummary = async () => {
               display: "flex",
               gap: 10,
               flexWrap: "wrap",
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
             {examplePrompts.map((example, index) => (
@@ -552,13 +661,15 @@ const copyExecutiveSummary = async () => {
                 key={index}
                 onClick={() => handleExampleClick(example.text)}
                 style={{
-                  padding: "8px 12px",
+                  padding: "10px 14px",
                   borderRadius: 999,
-                  border: "1px solid #d1d5db",
-                  background: "#f9fafb",
+                  border: "1px solid #dbeafe",
+                  background: "linear-gradient(180deg, #ffffff 0%, #f8fafc 100%)",
                   cursor: "pointer",
                   fontSize: 13,
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  color: "#1e293b",
+                  boxShadow: "0 1px 2px rgba(15,23,42,0.05)",
                 }}
               >
                 {example.label}
@@ -578,20 +689,23 @@ const copyExecutiveSummary = async () => {
               onClick={generateWorkflow}
               disabled={loading || !prompt.trim()}
               style={{
-                padding: "10px 16px",
-                borderRadius: 10,
+                padding: "12px 18px",
+                borderRadius: 14,
                 border: "none",
                 cursor: loading || !prompt.trim() ? "not-allowed" : "pointer",
-                fontWeight: 700,
-                background: "#111827",
+                fontWeight: 800,
+                fontSize: 14,
+                background: "linear-gradient(135deg, #111827 0%, #312e81 100%)",
                 color: "#ffffff",
+                boxShadow: "0 10px 20px rgba(49, 46, 129, 0.20)",
               }}
             >
               {loading ? "Generating..." : "Generate Workflow"}
             </button>
 
-            <span style={{ color: "#6b7280", fontSize: 14 }}>
-              Try: onboarding, incident response, help desk, or tool rationalization
+            <span style={{ color: "#64748b", fontSize: 14 }}>
+              Best results: onboarding, incident response, help desk, or tool
+              rationalization
             </span>
           </div>
         </Card>
@@ -599,12 +713,13 @@ const copyExecutiveSummary = async () => {
         {loading ? (
           <div
             style={{
-              marginTop: 18,
+              marginTop: 24,
               background: "#eff6ff",
               border: "1px solid #bfdbfe",
               color: "#1d4ed8",
-              borderRadius: 12,
-              padding: 14,
+              borderRadius: 16,
+              padding: 16,
+              fontWeight: 600,
             }}
           >
             Generating AI workflow...
@@ -614,12 +729,12 @@ const copyExecutiveSummary = async () => {
         {result?.error ? (
           <div
             style={{
-              marginTop: 18,
+              marginTop: 24,
               background: "#fef2f2",
               border: "1px solid #fecaca",
               color: "#b91c1c",
-              borderRadius: 12,
-              padding: 14,
+              borderRadius: 16,
+              padding: 16,
             }}
           >
             <strong>{result.error}</strong>
@@ -629,28 +744,52 @@ const copyExecutiveSummary = async () => {
 
         {result && !result.error ? (
           <>
-            <div style={{ marginTop: 18 }}>
+            <div style={{ marginTop: 24 }}>
               <Card title={result.title}>
-                <p>
-                  <strong>Business Challenge:</strong>{" "}
-                  {result.executiveSummary?.businessChallenge}
-                </p>
-                <p>
-                  <strong>Recommended Solution:</strong>{" "}
-                  {result.executiveSummary?.recommendedSolution}
-                </p>
-                <p>
-                  <strong>Expected Outcome:</strong>{" "}
-                  {result.executiveSummary?.expectedOutcome}
-                </p>
-                <p style={{ marginBottom: 0 }}>
-                  <strong>Strategic Value:</strong>{" "}
-                  {result.executiveSummary?.strategicValue}
-                </p>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginBottom: 16,
+                  }}
+                >
+                  <button
+                    onClick={copyExecutiveSummary}
+                    style={secondaryButtonStyle}
+                  >
+                    Copy Executive Summary
+                  </button>
+                </div>
 
                 <div
                   style={{
-                    marginTop: 16,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginTop: 8,
+                  }}
+                >
+                  <SummaryBlock
+                    title="Business Challenge"
+                    value={result.executiveSummary?.businessChallenge}
+                  />
+                  <SummaryBlock
+                    title="Recommended Solution"
+                    value={result.executiveSummary?.recommendedSolution}
+                  />
+                  <SummaryBlock
+                    title="Expected Outcome"
+                    value={result.executiveSummary?.expectedOutcome}
+                  />
+                  <SummaryBlock
+                    title="Strategic Value"
+                    value={result.executiveSummary?.strategicValue}
+                  />
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 18,
                     display: "flex",
                     gap: 10,
                     flexWrap: "wrap",
@@ -667,7 +806,7 @@ const copyExecutiveSummary = async () => {
               </Card>
             </div>
 
-            <div style={{ marginTop: 18 }}>
+            <div style={{ marginTop: 24 }}>
               <Card title="Workflow Diagram">
                 <div
                   style={{
@@ -680,7 +819,8 @@ const copyExecutiveSummary = async () => {
                   }}
                 >
                   <div style={{ color: "#64748b", fontSize: 14 }}>
-                    Export the rendered workflow as PNG or PDF for presentations or sharing.
+                    Export the rendered workflow as PNG or PDF for presentations
+                    or sharing.
                   </div>
 
                   <div
@@ -693,14 +833,7 @@ const copyExecutiveSummary = async () => {
                     <button
                       onClick={exportDiagramToPng}
                       disabled={exportingPng}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        border: "1px solid #d1d5db",
-                        background: "#f9fafb",
-                        cursor: exportingPng ? "not-allowed" : "pointer",
-                        fontWeight: 700,
-                      }}
+                      style={secondaryButtonStyle}
                     >
                       {exportingPng ? "Exporting PNG..." : "Export Diagram to PNG"}
                     </button>
@@ -708,14 +841,7 @@ const copyExecutiveSummary = async () => {
                     <button
                       onClick={exportDiagramToPdf}
                       disabled={exportingPdf}
-                      style={{
-                        padding: "10px 14px",
-                        borderRadius: 10,
-                        border: "1px solid #d1d5db",
-                        background: "#f9fafb",
-                        cursor: exportingPdf ? "not-allowed" : "pointer",
-                        fontWeight: 700,
-                      }}
+                      style={secondaryButtonStyle}
                     >
                       {exportingPdf ? "Exporting PDF..." : "Export Diagram to PDF"}
                     </button>
@@ -726,10 +852,12 @@ const copyExecutiveSummary = async () => {
                   ref={diagramRef}
                   style={{
                     height: 760,
-                    border: "1px solid #e5e7eb",
-                    borderRadius: 14,
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 20,
                     overflow: "hidden",
-                    background: "#ffffff",
+                    background:
+                      "radial-gradient(circle at top left, #ffffff 0%, #f8fafc 60%, #eef2ff 100%)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.5)",
                   }}
                 >
                   <ReactFlow
@@ -746,7 +874,7 @@ const copyExecutiveSummary = async () => {
               </Card>
             </div>
 
-            <div style={{ marginTop: 18 }}>
+            <div style={{ marginTop: 24 }}>
               <Card title="Workflow Metadata">
                 <div
                   style={{
@@ -755,18 +883,34 @@ const copyExecutiveSummary = async () => {
                     gap: 20,
                   }}
                 >
-                  <div>
-                    <h3 style={{ marginTop: 0 }}>Systems</h3>
-                    <ul style={{ marginBottom: 0 }}>
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 16,
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <h3 style={{ marginTop: 0, color: "#0f172a" }}>Systems</h3>
+                    <ul style={{ marginBottom: 0, color: "#475569", lineHeight: 1.8 }}>
                       {result.systems?.map((item, idx) => (
                         <li key={idx}>{item}</li>
                       ))}
                     </ul>
                   </div>
 
-                  <div>
-                    <h3 style={{ marginTop: 0 }}>Automation Opportunities</h3>
-                    <ul style={{ marginBottom: 0 }}>
+                  <div
+                    style={{
+                      padding: 16,
+                      borderRadius: 16,
+                      background: "#f8fafc",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <h3 style={{ marginTop: 0, color: "#0f172a" }}>
+                      Automation Opportunities
+                    </h3>
+                    <ul style={{ marginBottom: 0, color: "#475569", lineHeight: 1.8 }}>
                       {result.automationOpportunities?.map((item, idx) => (
                         <li key={idx}>{item}</li>
                       ))}
@@ -776,18 +920,11 @@ const copyExecutiveSummary = async () => {
               </Card>
             </div>
 
-            <div style={{ marginTop: 18 }}>
+            <div style={{ marginTop: 24 }}>
               <Card>
                 <button
                   onClick={() => setShowJson((prev) => !prev)}
-                  style={{
-                    padding: "10px 14px",
-                    borderRadius: 10,
-                    border: "1px solid #d1d5db",
-                    background: "#f9fafb",
-                    cursor: "pointer",
-                    fontWeight: 700,
-                  }}
+                  style={secondaryButtonStyle}
                 >
                   {showJson ? "Hide Technical Output" : "Show Technical Output"}
                 </button>
@@ -798,10 +935,12 @@ const copyExecutiveSummary = async () => {
                       marginTop: 16,
                       background: "#f8fafc",
                       padding: 16,
-                      borderRadius: 12,
+                      borderRadius: 16,
                       overflowX: "auto",
                       whiteSpace: "pre-wrap",
                       fontSize: 13,
+                      color: "#334155",
+                      border: "1px solid #e2e8f0",
                     }}
                   >
                     {JSON.stringify(result, null, 2)}
