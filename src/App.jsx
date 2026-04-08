@@ -540,6 +540,48 @@ export default function App() {
     }
   };
 
+  const generateLinkedInPost = async () => {
+    if (!result) return;
+
+    const postText = [
+      `Just built an AI-generated workflow for: ${
+        result.title || "an enterprise use case"
+      }.`,
+      "",
+      `This workflow focused on: ${
+        result.executiveSummary?.businessChallenge ||
+        "solving a business process challenge"
+      }.`,
+      "",
+      `The recommended solution was: ${
+        result.executiveSummary?.recommendedSolution ||
+        "a structured, visual workflow design"
+      }.`,
+      "",
+      `Expected outcome: ${
+        result.executiveSummary?.expectedOutcome ||
+        "improved visibility, efficiency, and governance"
+      }.`,
+      "",
+      `Strategic value: ${
+        result.executiveSummary?.strategicValue ||
+        "stronger alignment between business needs and execution"
+      }.`,
+      "",
+      `Built with an AI-powered workflow generator that converts business prompts into executive-ready diagrams, summaries, and exportable deliverables.`,
+      "",
+      `#AI #WorkflowAutomation #DigitalTransformation #ProcessImprovement #EnterpriseArchitecture #Innovation #Microsoft365 #Automation`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(postText);
+      alert("LinkedIn post copied.");
+    } catch (error) {
+      console.error("LinkedIn copy failed:", error);
+      alert("Failed to copy LinkedIn post.");
+    }
+  };
+
   return (
     <div
       style={{
@@ -750,6 +792,8 @@ export default function App() {
                   style={{
                     display: "flex",
                     justifyContent: "flex-end",
+                    gap: 10,
+                    flexWrap: "wrap",
                     marginBottom: 16,
                   }}
                 >
@@ -758,6 +802,13 @@ export default function App() {
                     style={secondaryButtonStyle}
                   >
                     Copy Executive Summary
+                  </button>
+
+                  <button
+                    onClick={generateLinkedInPost}
+                    style={secondaryButtonStyle}
+                  >
+                    Copy LinkedIn Post
                   </button>
                 </div>
 
