@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import dagre from "dagre";
 import { toPng } from "html-to-image";
+import jsPDF from "jspdf";
 import {
   ReactFlow,
   Background,
@@ -134,15 +135,15 @@ function buildLayoutedFlow(workflow) {
   const stepsWithAnchors = [
     {
       id: "START",
-      label: "Incident Detected",
-      owner: "Monitoring System",
+      label: "Start",
+      owner: "System",
       type: "start",
     },
     ...workflow.steps,
     {
       id: "END",
-      label: "Incident Closed",
-      owner: "IT Operations",
+      label: "End",
+      owner: "Process Owner",
       type: "end",
     },
   ];
@@ -151,13 +152,13 @@ function buildLayoutedFlow(workflow) {
     {
       source: "START",
       target: workflow.steps[0]?.id,
-      label: "Trigger Incident",
+      label: "Begin",
     },
     ...workflow.connections,
     {
       source: workflow.steps[workflow.steps.length - 1]?.id,
       target: "END",
-      label: "Close Incident",
+      label: "Complete",
     },
   ].filter((c) => c.source && c.target);
 
@@ -315,7 +316,8 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showJson, setShowJson] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [exportingPng, setExportingPng] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const diagramRef = useRef(null);
 
@@ -378,7 +380,7 @@ export default function App() {
     if (!diagramRef.current) return;
 
     try {
-      setExporting(true);
+      setExportingPng(true);
 
       const dataUrl = await toPng(diagramRef.current, {
         cacheBust: true,
@@ -394,7 +396,77 @@ export default function App() {
       console.error("PNG export failed:", error);
       alert("Failed to export diagram to PNG.");
     } finally {
-      setExporting(false);
+      setExportingPng(false);
+    }
+  };
+
+  const exportDiagramToPdf = async () => {
+    if (!diagramRef.current || !result) return;
+
+    try {
+      setExportingPdf(true);
+
+      const dataUrl = await toPng(diagramRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+
+      const pdf = new jsPDF({
+        orientation: "landscape",
+        unit: "px",
+        format: "a4",
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(18);
+      pdf.text(result.title || "Workflow Diagram", margin, 24);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(10);
+
+      const summaryLines = pdf.splitTextToSize(
+        result.executiveSummary?.recommendedSolution ||
+          "AI-generated workflow diagram.",
+        pageWidth - margin * 2
+      );
+      pdf.text(summaryLines, margin, 42);
+
+      const img = new Image();
+      img.src = dataUrl;
+
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+
+      const availableWidth = pageWidth - margin * 2;
+      const availableHeight = pageHeight - 110;
+
+      const imgRatio = img.width / img.height;
+      let imgWidth = availableWidth;
+      let imgHeight = imgWidth / imgRatio;
+
+      if (imgHeight > availableHeight) {
+        imgHeight = availableHeight;
+        imgWidth = imgHeight * imgRatio;
+      }
+
+      const x = (pageWidth - imgWidth) / 2;
+      const y = 80;
+
+      pdf.addImage(dataUrl, "PNG", x, y, imgWidth, imgHeight);
+
+      pdf.save(`${slugify(result.title || "workflow-diagram")}.pdf`);
+    } catch (error) {
+      console.error("PDF export failed:", error);
+      alert("Failed to export diagram to PDF.");
+    } finally {
+      setExportingPdf(false);
     }
   };
 
@@ -588,23 +660,46 @@ export default function App() {
                   }}
                 >
                   <div style={{ color: "#64748b", fontSize: 14 }}>
-                    Export the rendered workflow as a PNG for presentations or sharing.
+                    Export the rendered workflow as PNG or PDF for presentations or sharing.
                   </div>
 
-                  <button
-                    onClick={exportDiagramToPng}
-                    disabled={exporting}
+                  <div
                     style={{
-                      padding: "10px 14px",
-                      borderRadius: 10,
-                      border: "1px solid #d1d5db",
-                      background: "#f9fafb",
-                      cursor: exporting ? "not-allowed" : "pointer",
-                      fontWeight: 700,
+                      display: "flex",
+                      gap: 10,
+                      flexWrap: "wrap",
                     }}
                   >
-                    {exporting ? "Exporting..." : "Export Diagram to PNG"}
-                  </button>
+                    <button
+                      onClick={exportDiagramToPng}
+                      disabled={exportingPng}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        border: "1px solid #d1d5db",
+                        background: "#f9fafb",
+                        cursor: exportingPng ? "not-allowed" : "pointer",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {exportingPng ? "Exporting PNG..." : "Export Diagram to PNG"}
+                    </button>
+
+                    <button
+                      onClick={exportDiagramToPdf}
+                      disabled={exportingPdf}
+                      style={{
+                        padding: "10px 14px",
+                        borderRadius: 10,
+                        border: "1px solid #d1d5db",
+                        background: "#f9fafb",
+                        cursor: exportingPdf ? "not-allowed" : "pointer",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {exportingPdf ? "Exporting PDF..." : "Export Diagram to PDF"}
+                    </button>
+                  </div>
                 </div>
 
                 <div
