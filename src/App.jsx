@@ -469,7 +469,27 @@ export default function App() {
       setExportingPdf(false);
     }
   };
+const copyExecutiveSummary = async () => {
+    if (!result?.executiveSummary) return;
 
+    const summaryText = [
+      `Title: ${result.title || "Workflow Summary"}`,
+      "",
+      `Business Challenge: ${result.executiveSummary.businessChallenge || ""}`,
+      `Recommended Solution: ${result.executiveSummary.recommendedSolution || ""}`,
+      `Expected Outcome: ${result.executiveSummary.expectedOutcome || ""}`,
+      `Strategic Value: ${result.executiveSummary.strategicValue || ""}`,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(summaryText);
+      alert("Executive summary copied.");
+    } catch (error) {
+      console.error("Copy failed:", error);
+      alert("Failed to copy executive summary.");
+    }
+  };
+  
   return (
     <div
       style={{
