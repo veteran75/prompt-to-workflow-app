@@ -94,7 +94,7 @@ const workflowSchema = {
             target: { type: "string" },
             label: { type: "string" },
           },
-          required: ["source", "target"],
+          required: ["source", "target", "label"],
         },
       },
     },
