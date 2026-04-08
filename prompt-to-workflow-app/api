@@ -1,0 +1,51 @@
+export default async function handler(req, res) {
+  // Only allow POST
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  try {
+    const { prompt } = req.body || {};
+
+    if (!prompt) {
+      return res.status(400).json({ error: "Prompt is required" });
+    }
+
+    // TEMP: Mock response (so your app works immediately)
+    return res.status(200).json({
+      title: "Generated Workflow",
+      executiveSummary: {
+        businessChallenge: "Manual processes causing delays.",
+        recommendedSolution: "Implement structured workflow automation.",
+        expectedOutcome: "Improved efficiency and faster resolution.",
+        strategicValue: "Reduced cost and better governance."
+      },
+      roles: ["Service Desk", "IT Operations", "Management"],
+      systems: ["Monitoring Tool", "Ticketing System", "Microsoft Teams"],
+      steps: [
+        { id: "1", label: "Incident Detected", owner: "Monitoring Tool", type: "start" },
+        { id: "2", label: "Create Ticket", owner: "System", type: "system" },
+        { id: "3", label: "Triage Issue", owner: "Service Desk", type: "process" },
+        { id: "4", label: "Resolve Issue", owner: "IT Operations", type: "process" }
+      ],
+      connections: [
+        { source: "1", target: "2", label: "Trigger" },
+        { source: "2", target: "3", label: "Assign" },
+        { source: "3", target: "4", label: "Resolve" }
+      ],
+      automationOpportunities: [
+        "Auto ticket creation",
+        "Auto escalation",
+        "Notification workflows"
+      ]
+    });
+
+  } catch (error) {
+    console.error("API Error:", error);
+
+    return res.status(500).json({
+      error: "Internal server error",
+      details: error.message
+    });
+  }
+}
