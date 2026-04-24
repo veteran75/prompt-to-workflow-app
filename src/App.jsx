@@ -5,7 +5,6 @@ import jsPDF from "jspdf";
 import {
   ReactFlow,
   Background,
-  Controls,
   MarkerType,
   Position,
 } from "@xyflow/react";
@@ -1004,28 +1003,13 @@ export default function App() {
       </div>
     </div>
   );
+        <div className="print-container">
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+          >
+            <Background />
+          </ReactFlow>
+        </div>
 }
-<div className="print-container">
-  
-</div>
-<ReactFlow
-    nodes={nodes}
-    edges={edges}
-    onNodesChange={onNodesChange}
-    onEdgesChange={onEdgesChange}
-    onConnect={onConnect}
-    fitView
->
-      <Background />
-    <Controls />
-  </ReactFlow>
-</div>
-const { fitView } = useReactFlow();
-
-const handlePrint = () => {
-  fitView({ padding: 0.2 }); // adjusts zoom to fit everything
-  setTimeout(() => {
-    window.print();
-  }, 300);
-};
-<button onClick={handlePrint}>Print / Export PDF</button>
