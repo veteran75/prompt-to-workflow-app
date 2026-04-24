@@ -1005,3 +1005,6 @@ export default function App() {
     </div>
   );
 }
+<div className="print-container">
+  <ReactFlow ... />
+</div>
