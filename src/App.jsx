@@ -1008,3 +1008,13 @@ export default function App() {
 <div className="print-container">
   <ReactFlow ... />
 </div>
+import { useReactFlow } from 'reactflow';
+
+const { fitView } = useReactFlow();
+
+const handlePrint = () => {
+  fitView({ padding: 0.2 }); // adjusts zoom to fit everything
+  setTimeout(() => {
+    window.print();
+  }, 300);
+};
