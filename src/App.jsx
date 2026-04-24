@@ -1007,6 +1007,16 @@ export default function App() {
 }
 <div className="print-container">
   <ReactFlow ... />
+    nodes={nodes}
+    edges={edges}
+    onNodesChange={onNodesChange}
+    onEdgesChange={onEdgesChange}
+    onConnect={onConnect}
+    fitView
+  >
+    <Background />
+    <Controls />
+  </ReactFlow>
 </div>
 import { useReactFlow } from 'reactflow';
 
