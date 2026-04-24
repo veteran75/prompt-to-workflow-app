@@ -1018,3 +1018,4 @@ const handlePrint = () => {
     window.print();
   }, 300);
 };
+<button onClick={handlePrint}>Print / Export PDF</button>
