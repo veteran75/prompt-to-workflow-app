@@ -182,3 +182,40 @@
     border-right-color: var(--border);
   }
 }
+@media print {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+
+  .react-flow {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .react-flow__viewport {
+    transform: none !important;
+  }
+
+  .react-flow__renderer {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .react-flow__controls,
+  .react-flow__minimap,
+  .react-flow__attribution {
+    display: none !important;
+  }
+
+  .print-container {
+    width: 100%;
+    page-break-inside: avoid;
+  }
+}
+
+/* Optional: reduce whitespace on screen AND print */
+.react-flow {
+  max-height: 800px;
+}
