@@ -1006,20 +1006,20 @@ export default function App() {
   );
 }
 <div className="print-container">
-  <ReactFlow ... />
+  
+</div>
+<ReactFlow
     nodes={nodes}
     edges={edges}
     onNodesChange={onNodesChange}
     onEdgesChange={onEdgesChange}
     onConnect={onConnect}
     fitView
-  >
-    <Background />
+>
+      <Background />
     <Controls />
   </ReactFlow>
 </div>
-
-
 const { fitView } = useReactFlow();
 
 const handlePrint = () => {
